@@ -1,0 +1,277 @@
+---
+# Copyright 2020 Electromech
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'RDS: Log Export to S3'
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+    - Label:
+        default: 'Provide S3 Bucket Info'
+      Parameters:
+      - BucketNames
+      - S3BucketPrefix
+    - Label:
+        default: 'S3 Bucket LifecycleConfiguration'
+      Parameters:
+      - ExpirationInDay
+      - TransitionInDays
+      - StorageClass
+    - Label:
+        default: 'RDSInstanceName'
+      Parameters:
+      - RDSInstanceName
+    - Label:
+        default: 'LogNamePrefixs'
+      Parameters:
+      - LogNamePrefix
+    - Label:
+        default: 'Cloudwatch Lambda Log'
+      Parameters:
+      - LogsRetentionInDays
+Parameters:
+  BucketNames:
+    Description: 'The name for the S3 bucket - must be unique across all of AWS (3-63 lowercase letters or numbers)'
+    Type: String
+    Default: 'replaceme'
+    AllowedPattern: '^[a-z0-9]{5,40}$'
+    ConstraintDescription: '3-63 characters; must contain only lowercase letters or numbers'
+  S3BucketPrefix:
+    Description: 'You can provide Prefix'
+    Type: String
+    Default: logs/
+  ExpirationInDay:
+    Description: 'You can provide s3 to expire object.'
+    Type: Number
+    Default: 90
+    ConstraintDescription: 'Must be in the range [0-365]'
+    MinValue: 0
+    MaxValue: 365
+  TransitionInDays:
+    Description: 'You can provide s3 to Transition object.'
+    Type: Number
+    Default: 30
+    ConstraintDescription: 'Must be in the range [30-365]'
+    MinValue: 30
+    MaxValue: 365
+  StorageClass:
+    Description: 'You can provide S3 Storage Class'
+    Type: String
+    Default: GLACIER
+  RDSInstanceName:
+    Description: 'You can provide RDS DB Instance Name.'
+    Type: String
+    Default: database-1
+  LogNamePrefix:
+    Description: 'You can provide RDS LogNamePrefix'
+    Type: String
+    Default: audit/server_audit.log
+  LogsRetentionInDays:
+    Description: 'Specifies the number of days you want to retain cloudwatch lambdalog events in the specified log group.'
+    Type: Number
+    Default: 30
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+Resources:
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Join
+        - '-'
+        - - !Ref BucketNames
+      AccessControl: Private
+      LifecycleConfiguration:
+        Rules:
+          - Id: GlacierRule
+            Prefix: !Ref S3BucketPrefix
+            Status: Enabled
+            ExpirationInDays: !Ref ExpirationInDay
+            Transitions:
+              - TransitionInDays: !Ref TransitionInDays
+                StorageClass: !Ref StorageClass
+  LambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: 'lambda.amazonaws.com'
+          Action: 'sts:AssumeRole'
+      Policies:
+      - PolicyName: !Sub s3-${AWS::StackName}
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - 's3:GetObject'
+            - 's3:PutObject'
+            - 's3:ListBucket'
+            Resource: 
+              - !Sub 'arn:aws:s3:::${S3Bucket}/*'
+              - !Sub 'arn:aws:s3:::${S3Bucket}'
+      - PolicyName: !Sub rds-${AWS::StackName}
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+            - 'rds:DescribeDBLogFiles'
+            - 'rds:DownloadDBLogFilePortion'
+            Resource: '*'
+  LambdaPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      Roles:
+      - !Ref LambdaRole
+      PolicyName: !Sub lambda-${AWS::StackName}
+      PolicyDocument:
+        Statement:
+        - Effect: Allow
+          Action:
+          - 'logs:CreateLogStream'
+          - 'logs:CreateLogGroup'
+          - 'logs:PutLogEvents'
+          Resource: !GetAtt 'LambdaLogGroup.Arn'
+
+  LambdaFunctionV2: # needs no monitoring because it is used as a custom resource
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        ZipFile: |
+          import boto3, botocore
+          import datetime
+          
+          ## Set the values below if using Lambda Scheduled Event as an Event Source, otherwise leave empty and send data through the Lambda event payload
+          S3BCUKET=''
+          S3PREFIX=''
+          RDSINSANCE=''
+          LOGNAME=''
+          LASTRECIEVED=''
+          REGION=''
+          
+          def lambda_handler(event, context):
+          	firstRun = False
+          	logFileData = ""
+          	if {'BucketName','S3BucketPrefix','RDSInstanceName','LogNamePrefix','lastRecievedFile','Region'}.issubset(event):
+          		S3BucketName = event['BucketName']	
+          		S3BucketPrefix = event['S3BucketPrefix']
+          		RDSInstanceName = event['RDSInstanceName']
+          		logNamePrefix = event['LogNamePrefix']
+          		lastRecievedFile = S3BucketPrefix + str(datetime.date.today()) + event['lastRecievedFile']
+          		region = event['Region']
+          	else:
+          		S3BucketName = S3BCUKET
+          		S3BucketPrefix = S3PREFIX
+          		RDSInstanceName = RDSINSANCE
+          		logNamePrefix = LOGNAME
+          		lastRecievedFile = S3BucketPrefix + str(datetime.date.today()) + LASTRECIEVED
+          		region = REGION
+          	RDSclient = boto3.client('rds',region_name=region)
+          	S3client = boto3.client('s3',region_name=region)
+          	dbLogs = RDSclient.describe_db_log_files( DBInstanceIdentifier=RDSInstanceName, FilenameContains=logNamePrefix)
+          	lastWrittenTime = 0
+          	lastWrittenThisRun = 0
+          	try:
+          		S3response = S3client.head_bucket(Bucket=S3BucketName)
+          	except botocore.exceptions.ClientError as e:
+          		error_code = int(e.response['ResponseMetadata']['HTTPStatusCode'])
+          		if error_code == 404:
+          			return "Error: Bucket name provided not found"
+          		else:
+          			return "Error: Unable to access bucket name, error: " + e.response['Error']['Message']
+          	try:
+          		S3response = S3client.get_object(Bucket=S3BucketName, Key=lastRecievedFile)
+          	except botocore.exceptions.ClientError as e:
+          		error_code = int(e.response['ResponseMetadata']['HTTPStatusCode'])
+          		if error_code == 404:
+          			print("It appears this is the first log import, all files will be retrieved from RDS")
+          			firstRun = True
+          		else:
+          			return "Error: Unable to access lastRecievedFile name, error: " + e.response['Error']['Message']
+          	
+          	if firstRun == False:
+          		lastWrittenTime = int(S3response['Body'].read(S3response['ContentLength']))
+          		print("Found marker from last log download, retrieving log files with lastWritten time after %s" % str(lastWrittenTime))
+          	for dbLog in dbLogs['DescribeDBLogFiles']:
+          		if ( int(dbLog['LastWritten']) > lastWrittenTime ) or firstRun:
+          			print("Downloading log file: %s found and with LastWritten value of: %s " % (dbLog['LogFileName'],dbLog['LastWritten']))
+          			if int(dbLog['LastWritten']) > lastWrittenThisRun:
+          				lastWrittenThisRun = int(dbLog['LastWritten'])
+          			logFile = RDSclient.download_db_log_file_portion(DBInstanceIdentifier=RDSInstanceName, LogFileName=dbLog['LogFileName'],Marker='0')
+          			logFileData = logFile['LogFileData']
+          			while logFile['AdditionalDataPending']:
+          				logFile = RDSclient.download_db_log_file_portion(DBInstanceIdentifier=RDSInstanceName, LogFileName=dbLog['LogFileName'],Marker=logFile['Marker'])
+          				logFileData += logFile['LogFileData']
+          			byteData = str.encode(logFileData)
+          			try:
+          				objectName = S3BucketPrefix + str(datetime.date.today()) + dbLog['LogFileName']
+          				S3response = S3client.put_object(Bucket=S3BucketName, Key=objectName,Body=byteData)
+          			except botocore.exceptions.ClientError as e:
+          				return "Error writting object to S3 bucket, S3 ClientError: " + e.response['Error']['Message']
+          			print("Writting log file %s to S3 bucket %s" % (objectName,S3BucketName))
+          	try:
+          		S3response = S3client.put_object(Bucket=S3BucketName, Key=lastRecievedFile, Body=str.encode(str(lastWrittenThisRun)))			
+          	except botocore.exceptions.ClientError as e:
+          		return "Error writting object to S3 bucket, S3 ClientError: " + e.response['Error']['Message']
+          	print("Wrote new Last Written Marker to %s in Bucket %s" % (lastRecievedFile,S3BucketName))
+          	return "Log file export complete"
+      Handler: 'index.lambda_handler'
+      MemorySize: 512
+      Role: !GetAtt 'LambdaRole.Arn'
+      Runtime: 'python3.9'
+      Timeout: 300
+  LambdaLogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${LambdaFunctionV2}'
+      RetentionInDays: !Ref LogsRetentionInDays
+  ScheduledRule: 
+    Type: AWS::Events::Rule
+    Properties: 
+      Description: "ScheduledRule"
+      ScheduleExpression: "rate(1 minute)"
+      State: "ENABLED"
+      Targets: 
+        - 
+          Arn: 
+            Fn::GetAtt: 
+              - "LambdaFunctionV2"
+              - "Arn"
+          Id: "LambdaFunctionV2"
+          Input: !Sub |
+              {
+                "BucketName": "${BucketNames}",
+                "S3BucketPrefix": "${S3BucketPrefix}",
+                "RDSInstanceName": "${RDSInstanceName}",
+                "LogNamePrefix" : "${LogNamePrefix}",
+                "lastRecievedFile" : "lastWrittenMarker",
+                "Region"  :"${AWS::Region}"
+              }
+  PermissionForEventsToInvokeLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !Ref "LambdaFunctionV2"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: 
+        Fn::GetAtt: 
+          - "ScheduledRule"
+          - "Arn"
+Outputs:
+  BucketName:
+    Value: !Ref BucketNames
+    Description: Name of the sample Amazon S3 bucket with a lifecycle configuration.
+  StackName:
+    Description: 'Stack name.'
+    Value: !Sub '${AWS::StackName}'
