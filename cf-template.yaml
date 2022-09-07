@@ -168,14 +168,14 @@ Resources:
           		S3BucketPrefix = event['S3BucketPrefix']
           		RDSInstanceName = event['RDSInstanceName']
           		logNamePrefix = event['LogNamePrefix']
-          		lastRecievedFile = S3BucketPrefix + str(datetime.today().date())  + str(datetime.today().hour) + event['lastRecievedFile']
+          		lastRecievedFile = S3BucketPrefix + str(datetime.today().date()) + str("-") + str(datetime.today().hour) + event['lastRecievedFile']
           		region = event['Region']
           	else:
           		S3BucketName = S3BCUKET
           		S3BucketPrefix = S3PREFIX
           		RDSInstanceName = RDSINSANCE
           		logNamePrefix = LOGNAME
-          		lastRecievedFile = S3BucketPrefix +  str(datetime.today().date())  + str(datetime.today().hour) + LASTRECIEVED
+          		lastRecievedFile = S3BucketPrefix +  str(datetime.today().date()) + str("-") + str(datetime.today().hour) + LASTRECIEVED
           		region = REGION
           	RDSclient = boto3.client('rds',region_name=region)
           	S3client = boto3.client('s3',region_name=region)
@@ -215,7 +215,7 @@ Resources:
           				logFileData += logFile['LogFileData']
           			byteData = str.encode(logFileData)
           			try:
-          				objectName = S3BucketPrefix +  str(datetime.today().date()) + str(datetime.today().hour) + dbLog['LogFileName']
+          				objectName = S3BucketPrefix +  str(datetime.today().date()) + str("-") + str(datetime.today().hour) + dbLog['LogFileName']
           				S3response = S3client.put_object(Bucket=S3BucketName, Key=objectName,Body=byteData)
           			except botocore.exceptions.ClientError as e:
           				return "Error writting object to S3 bucket, S3 ClientError: " + e.response['Error']['Message']
