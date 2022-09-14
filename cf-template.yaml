@@ -228,7 +228,8 @@ Resources:
           	return "Log file export complete"
       Handler: 'index.lambda_handler'
       MemorySize: 1024
-      EphemeralStorage: 5120
+      EphemeralStorage: 
+        Size: 5120
       Role: !GetAtt 'LambdaRole.Arn'
       Runtime: 'python3.9'
       Timeout: 900
