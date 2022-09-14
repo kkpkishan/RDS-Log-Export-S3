@@ -227,10 +227,11 @@ Resources:
           	print("Wrote new Last Written Marker to %s in Bucket %s" % (lastRecievedFile,S3BucketName))
           	return "Log file export complete"
       Handler: 'index.lambda_handler'
-      MemorySize: 512
+      MemorySize: 1024
+      EphemeralStorage: 5120
       Role: !GetAtt 'LambdaRole.Arn'
       Runtime: 'python3.9'
-      Timeout: 300
+      Timeout: 900
   LambdaLogGroup:
     Type: 'AWS::Logs::LogGroup'
     Properties:
@@ -240,7 +241,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties: 
       Description: "ScheduledRule"
-      ScheduleExpression: "rate(5 minutes)"
+      ScheduleExpression: "rate(60 minutes)"
       State: "ENABLED"
       Targets: 
         - 
