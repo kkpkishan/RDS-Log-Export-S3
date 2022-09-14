@@ -240,7 +240,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties: 
       Description: "ScheduledRule"
-      ScheduleExpression: "rate(1 minute)"
+      ScheduleExpression: "rate(5 minutes)"
       State: "ENABLED"
       Targets: 
         - 
