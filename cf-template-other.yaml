@@ -495,7 +495,6 @@ Resources:
                 "s3_bucket_name": "${BucketNames}",
                 "rds_instance_name": "${RDSInstanceName}",
                 "log_prefix" : "${LogNamePrefix}",
-                "lastRecievedFile" : "lastWrittenMarker",
                 "aws_region"  :"${AWS::Region}",
                 "min_size" : "${MIN_Size}"
               }
