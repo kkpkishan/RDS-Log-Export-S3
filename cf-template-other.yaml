@@ -37,9 +37,9 @@ Metadata:
       Parameters:
       - LogNamePrefix
     - Label:
-        default: 'MIN_Size'
+        default: 'MINSize'
       Parameters:
-      - min_size
+      - MINSize
     - Label:
         default: 'Cloudwatch Lambda Log'
       Parameters:
@@ -81,7 +81,7 @@ Parameters:
     Description: 'You can provide RDS LogNamePrefix'
     Type: String
     Default: audit/server_audit.log
-  MIN_Size:
+  MINSize:
     Description: 'Filters logs less than the specified size in bytes.'
     Type: Number
     Default: 10000000
@@ -496,7 +496,7 @@ Resources:
                 "rds_instance_name": "${RDSInstanceName}",
                 "log_prefix" : "${LogNamePrefix}",
                 "aws_region"  :"${AWS::Region}",
-                "min_size" : "${MIN_Size}"
+                "min_size" : "${MINSize}"
               }
   PermissionForEventsToInvokeLambda: 
     Type: AWS::Lambda::Permission
