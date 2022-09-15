@@ -137,8 +137,12 @@ Resources:
           Statement:
           - Effect: Allow
             Action:
+            - 'rds:DownloadCompleteDBLogFile'
             - 'rds:DescribeDBLogFiles'
-            - 'rds:DownloadDBLogFilePortion'
+            - 'rds:DescribeDBInstances'
+            - 'kms:GenerateDataKey'
+            - 'kms:Encrypt'
+            - 'kms:Decrypt'
             Resource: '*'
   LambdaPolicy:
     Type: 'AWS::IAM::Policy'
@@ -496,7 +500,7 @@ Resources:
                 "rds_instance_name": "${RDSInstanceName}",
                 "log_prefix" : "${LogNamePrefix}",
                 "aws_region"  :"${AWS::Region}",
-                "min_size" : "${MINSize}"
+                "min_size" : ${MINSize}
               }
   PermissionForEventsToInvokeLambda: 
     Type: AWS::Lambda::Permission
