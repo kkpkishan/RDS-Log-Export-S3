@@ -51,10 +51,6 @@ Parameters:
     Default: 'replaceme'
     AllowedPattern: '[a-zA-Z][a-zA-Z0-9_-]*'
     ConstraintDescription: '3-63 characters; must contain only lowercase letters or numbers'
-  # S3BucketPrefix:
-  #   Description: 'You can provide Prefix'
-  #   Type: String
-  #   Default: logs/
   ExpirationInDay:
     Description: 'You can provide s3 to expire object.'
     Type: Number
@@ -372,17 +368,6 @@ Resources:
           
           
           def get_signature_key(key, date, region_name, service_name):
-              """
-              AWS key derivation functions.
-          
-              See: http://docs.aws.amazon.com/general/latest/gr/signature-v4-examples.html#signature-v4-examples-python
-          
-              :param key: The signing key
-              :param date: The current date w/o time, YYYYMMDD
-              :param region_name: The AWS region
-              :param service_name: The AWS service name, e.g. RDS, S3, etc.
-              :return: The signing key
-              """
           
               def sign(k, msg): return hmac.new(k, msg.encode('utf-8'), hashlib.sha256).digest()
           
@@ -485,7 +470,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties: 
       Description: "ScheduledRule"
-      ScheduleExpression: "rate(1 minute)"
+      ScheduleExpression: "rate(30 minutes)"
       State: "ENABLED"
       Targets: 
         - 
