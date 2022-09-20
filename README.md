@@ -114,9 +114,17 @@ For simplicity to create lambda functions, CloudFormation templates are created.
 - Edit parameter: “general\_log” ⇒ Change its value from BLANK to 1
 
 3. **Run the Cloudformation Template.** 
-
-https://github.com/kkpkishan/RDS-Log-Export-S3/blob/main/cf-template-other.yaml
-
+            <table>
+                <tr>
+                    <th align="left">Launch</th>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="https://console.aws.amazon.com/cloudformation/home?#/stacks/new?&templateURL=https://github.com/kkpkishan/RDS-Log-Export-S3/blob/main/cf-template-other.yaml
+" target="_blank"><img src="https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png"></a>
+                    </td>
+                </tr>
+            </table>
 The cost saving
 
 ![](src/004.png)
