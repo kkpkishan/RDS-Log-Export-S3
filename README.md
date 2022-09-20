@@ -5,11 +5,11 @@ So the question is how to get the logs and perform analysis or troubleshooting?
 
 AWS RDS allows configuring and export database logs to Amazon CloudWatch logs. Once it is exported, one can perform real-time analysis of the log data, store the data in highly durable storage, and manage the data with the CloudWatch Logs Agent.
 
-![](Aspose.Words.85af6788-5579-469c-8d1b-802c9d30d5d8.001.png)
+![](001.png)
 
 The cost calculation for RDS logs exporting to Amazon Cloudwatch log group is as below.
 
-![](Aspose.Words.85af6788-5579-469c-8d1b-802c9d30d5d8.002.png)
+![](002.png)
 
 This is good for most of the cases.
 
@@ -98,7 +98,7 @@ We will write a Lambda function which calls the API to download the file and dum
 
 Please follow the below instructions.
 
-![](Aspose.Words.85af6788-5579-469c-8d1b-802c9d30d5d8.003.png)
+![](003.png)
 
 For simplicity to create lambda functions, CloudFormation templates are created. Please use the templates.
 
@@ -119,7 +119,7 @@ https://github.com/kkpkishan/RDS-Log-Export-S3/blob/main/cf-template-other.yaml
 
 The cost saving
 
-![](Aspose.Words.85af6788-5579-469c-8d1b-802c9d30d5d8.004.png)
+![](004.png)
 
 # Conclusion
 One can save significant cost with this approach.
