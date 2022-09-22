@@ -78,9 +78,9 @@ Parameters:
     Type: String
     Default: audit/server_audit.log
   MINSize:
-    Description: 'Filters logs less than the specified size in bytes.'
+    Description: 'Filters logs less than the specified size in bytes. Default Size 100MB'
     Type: Number
-    Default: 10000000
+    Default: 100000000
     ConstraintDescription: 'Must be in the range [0-1000000000]'
     MinValue: 0
     MaxValue: 1000000000
